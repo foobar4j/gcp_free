@@ -15,7 +15,6 @@ except ImportError:
     print("pip install google-cloud-compute google-cloud-resource-manager")
     sys.exit(1)
 
-DEFAULT_PROJECT_ID = "pelagic-pod-432503-h1"
 GITHUB_REPO = "fatekey/gcp_free"
 GITHUB_BRANCH = "master"
 GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/{GITHUB_REPO}/{GITHUB_BRANCH}"
@@ -71,6 +70,14 @@ def select_from_list(items, prompt_text, label_fn):
         print("输入无效，请重试。")
 
 
+def prompt_manual_project_id():
+    while True:
+        project_id = input("请输入项目 ID: ").strip()
+        if project_id:
+            return project_id
+        print("输入不能为空，请重试。")
+
+
 def select_gcp_project():
     print_info("正在扫描您的项目列表...")
     try:
@@ -84,8 +91,8 @@ def select_gcp_project():
                 active_projects.append(project)
 
         if not active_projects:
-            print_warning("未找到活跃的项目。将尝试使用默认环境项目。")
-            return DEFAULT_PROJECT_ID
+            print_warning("未找到活跃的项目。请手动输入项目 ID。")
+            return prompt_manual_project_id()
 
         print("\n--- 请选择目标项目 ---")
         for i, p in enumerate(active_projects):
@@ -96,13 +103,13 @@ def select_gcp_project():
             if choice.isdigit():
                 idx = int(choice) - 1
                 if 0 <= idx < len(active_projects):
-                    selected = active_projects[idx].project_id
-                    print_info(f"已选择项目: {selected}")
-                    return selected
+                    selected = active_projects[idx]
+                    print_info(f"已选择项目: {selected.project_id} ({selected.display_name})")
+                    return selected.project_id
             print("输入无效，请重试。")
     except Exception as e:
-        print_warning(f"无法列出项目: {e}。使用默认设置。")
-        return DEFAULT_PROJECT_ID
+        print_warning(f"无法列出项目: {e}。请手动输入项目 ID。")
+        return prompt_manual_project_id()
 
 
 def list_zones_for_region(project_id, region):
@@ -769,12 +776,12 @@ def main():
         print("------------------------------------------------")
         print("[1] 新建免费实例")
         print("[2] 选择服务器")
-        print("[3] 刷 AMD CPU (当前服务器)")
+        print("[3] 刷 AMD CPU")
         print("[4] 配置防火墙规则")
         print("[5] Debian换源")
         print("[6] 安装 dae")
         print("[7] 上传 config.dae 并启用 dae")
-        print("[8] 安装流量监控脚本")
+        print("[8] 安装流量监控脚本（仅适配 Debian）")
         print("[9] 删除当前免费资源")
         print("[0] 退出")
         choice = input("请输入数字选择: ").strip()

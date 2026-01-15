@@ -17,7 +17,10 @@
 在右上角点击 Cloud Shell 
 在 Cloud Shell 服务器运行
 ```bash
-bash start.sh
+# 初次运行
+git clone https://github.com/fatekey/gcp_free && cd gcp_free && bash start.sh
+# 再次运行
+cd ~/gcp_free && bash start.sh
 ```
 
 ## 环境要求
