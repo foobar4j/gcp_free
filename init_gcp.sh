@@ -191,7 +191,16 @@ install_xui() {
     printf "${GREEN}--- 安装 x-ui-yg 科学上网脚本 ---${NC}\n"
     printf "${YELLOW}--> 正在执行 x-ui-yg 安装脚本...${NC}\n"
     printf "${YELLOW}安装过程将是交互式的，请根据提示进行操作。${NC}\n"
-    bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/x-ui-yg/main/install.sh)
+    
+    # 下载脚本到临时文件并执行，以兼容 sh 并支持交互
+    curl -o /tmp/xui_install.sh -Ls https://raw.githubusercontent.com/yonggekkk/x-ui-yg/main/install.sh
+    if [ $? -eq 0 ]; then
+        bash /tmp/xui_install.sh
+        rm -f /tmp/xui_install.sh
+    else
+        printf "${RED}下载 x-ui-yg 脚本失败。${NC}\n"
+    fi
+    
     echo
     printf "按回车键返回菜单..."
     read DUMMY
