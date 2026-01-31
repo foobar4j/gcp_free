@@ -8,9 +8,11 @@
 #   1. 开启 root 用户密码登录 SSH。
 #   2. 可选安装 1Panel 管理面板。
 #   3. 可选安装 x-ui-yg 脚本，用于科学上网。
+#   4. init_gcp.sh 脚本更新。
 #
 #   作者:   基于用户需求生成的 AI 脚本
-#   版本:   1.1
+#   版本:   1.2
+#   更新地址: https://github.com/foobar4j/gcp_free
 #
 # ==============================================================================
 
@@ -20,11 +22,70 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# 脚本信息
+SCRIPT_VERSION="1.2"
+SCRIPT_URL="https://raw.githubusercontent.com/foobar4j/gcp_free/main/init_gcp.sh"
+
+# 自更新函数
+update_script() {
+    echo -e "${YELLOW}--> 正在检查更新...${NC}"
+
+    # 下载远程脚本到临时文件
+    TEMP_SCRIPT=$(mktemp)
+    if ! curl -fsSL "$SCRIPT_URL" -o "$TEMP_SCRIPT"; then
+        echo -e "${RED}错误: 无法下载远程脚本，请检查网络连接。${NC}"
+        rm -f "$TEMP_SCRIPT"
+        exit 1
+    fi
+
+    # 提取远程版本号
+    REMOTE_VERSION=$(grep "^#   版本:" "$TEMP_SCRIPT" | awk '{print $3}')
+
+    # 比较版本
+    if [ "$REMOTE_VERSION" = "$SCRIPT_VERSION" ]; then
+        echo -e "${GREEN}当前已是最新版本 v${SCRIPT_VERSION}。${NC}"
+        rm -f "$TEMP_SCRIPT"
+        exit 0
+    fi
+
+    echo -e "${YELLOW}发现新版本: v${REMOTE_VERSION} (当前: v${SCRIPT_VERSION})${NC}"
+    read -p "是否更新到最新版本? (y/n) [默认 y]: " UPDATE_CONFIRM
+    UPDATE_CONFIRM=${UPDATE_CONFIRM:-y}
+
+    if [[ "$UPDATE_CONFIRM" =~ ^[yY](es)?$ ]]; then
+        # 获取当前脚本路径
+        CURRENT_SCRIPT="$0"
+
+        # 备份当前脚本
+        cp "$CURRENT_SCRIPT" "${CURRENT_SCRIPT}.bak"
+        echo -e "${YELLOW}已备份当前脚本到 ${CURRENT_SCRIPT}.bak${NC}"
+
+        # 替换脚本
+        cp "$TEMP_SCRIPT" "$CURRENT_SCRIPT"
+        chmod +x "$CURRENT_SCRIPT"
+
+        echo -e "${GREEN}脚本已更新到 v${REMOTE_VERSION}！${NC}"
+        echo -e "${YELLOW}请重新运行脚本: bash $CURRENT_SCRIPT${NC}"
+    else
+        echo -e "${YELLOW}已取消更新。${NC}"
+    fi
+
+    rm -f "$TEMP_SCRIPT"
+    exit 0
+}
+
+# 检查命令行参数
+if [ "$1" = "--update" ] || [ "$1" = "-u" ]; then
+    update_script
+fi
+
 # --- 步骤 0: 检查权限和环境 ---
 clear
 echo -e "${GREEN}=====================================================${NC}"
-echo -e "${GREEN}     欢迎使用云服务器一键初始化脚本 v1.1       ${NC}"
+echo -e "${GREEN}     欢迎使用云服务器一键初始化脚本 v${SCRIPT_VERSION}       ${NC}"
 echo -e "${GREEN}=====================================================${NC}"
+echo
+echo -e "${YELLOW}提示: 使用 '$0 --update' 或 '$0 -u' 可更新脚本到最新版本${NC}"
 echo
 
 # 检查是否为 root 用户

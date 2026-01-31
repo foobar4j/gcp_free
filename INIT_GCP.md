@@ -5,6 +5,7 @@
 1. 开启 root 用户密码登录 SSH
 2. 可选安装 1Panel 管理面板
 3. 可选安装 x-ui-yg 脚本（用于科学上网）
+4. init_gcp.sh 脚本更新
 
 ## 一键安装
 
@@ -40,6 +41,13 @@ curl -Ls https://raw.githubusercontent.com/foobar4j/gcp_free/main/init_gcp.sh | 
 - 选择 `y` 则自动执行 x-ui-yg 安装脚本（交互式）
 - 选择 `n` 则跳过此步骤
 
+### 步骤 4：init_gcp.sh 脚本更新
+
+- 脚本启动时会显示更新提示信息
+- 使用 `--update` 或 `-u` 参数可检查并更新 init_gcp.sh 脚本
+- 更新前自动备份当前脚本（`.bak` 后缀）
+- 更新完成后提示重新运行脚本
+
 ## 注意事项
 
 1. 脚本必须以 root 用户身份运行
@@ -60,3 +68,24 @@ chmod +x init_gcp.sh
 # 运行脚本
 sudo bash init_gcp.sh
 ```
+
+## 更新脚本
+
+脚本支持自更新功能，可以检查并更新到最新版本：
+
+```bash
+# 如果已下载脚本
+./init_gcp.sh --update
+
+# 或者使用短选项
+./init_gcp.sh -u
+
+# 或者通过 bash 运行
+bash init_gcp.sh --update
+```
+
+更新功能会：
+1. 检查远程仓库的脚本版本
+2. 如果有新版本，提示是否更新
+3. 更新前自动备份当前脚本（`.bak` 后缀）
+4. 更新完成后提示重新运行脚本
