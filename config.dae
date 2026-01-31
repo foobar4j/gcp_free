@@ -1,7 +1,7 @@
 global{
     log_level: info
     wan_interface: auto
-    lan_interface: docker0
+    lan_interface: docker0,br-047e16ea1662
     auto_config_kernel_parameter: true
     allow_insecure: true
 }
