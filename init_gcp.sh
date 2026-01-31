@@ -251,8 +251,8 @@ else
 fi
 echo
 
-# --- 步骤 3: 安装 x-ui-yg 脚本 ---
-echo -e "${GREEN}--- 步骤 3/3: 安装科学上网管理脚本 ---${NC}"
+# --- 步骤 4: 安装 x-ui-yg 脚本 ---
+echo -e "${GREEN}--- 步骤 4/4: 安装科学上网管理脚本 ---${NC}"
 read -p "是否需要安装 x-ui-yg 管理脚本? (y/n) [默认 n]: " INSTALL_XUI
 
 if [[ "$INSTALL_XUI" =~ ^[yY](es)?$ ]]; then
@@ -271,8 +271,9 @@ echo -e "${GREEN}=====================================================${NC}"
 echo
 echo -e "操作摘要:"
 echo -e "1. ${GREEN}Root 登录已开启${NC}，你可以使用新设置的密码通过 SSH 客户端（如 Putty, iTerm2）登录。"
-echo -e "2. 如果安装了 1Panel，请根据上面打印出的 ${YELLOW}面板地址、用户名和密码${NC} 访问。"
-echo -e "3. 如果安装了 x-ui-yg，请根据安装提示访问管理面板。"
+echo -e "2. ${GREEN}Docker 已安装并配置${NC}，镜像源已设置为 http://mirror.gcr.io。"
+echo -e "3. 如果安装了 1Panel，请根据上面打印出的 ${YELLOW}面板地址、用户名和密码${NC} 访问。"
+echo -e "4. 如果安装了 x-ui-yg，请根据安装提示访问管理面板。"
 echo
 echo -e "${YELLOW}重要提示: 如果你安装了任何需要开放端口的服务（如 1Panel），请务必在云服务商（GCP, Azure等）的防火墙/安全组规则中放行相应的端口！${NC}"
 echo
