@@ -123,6 +123,9 @@ EOF
         fi
 
         # 检查并配置 dae（如果存在）
+        # 增加延时，确保 Docker 网桥完全就绪
+        sleep 2
+
         if systemctl is-active --quiet dae; then
             echo -e "${YELLOW}检测到 dae 服务正在运行，正在配置 Docker 网桥...${NC}"
 
@@ -134,6 +137,8 @@ EOF
 
                 if [ -f "$DAE_CONFIG" ]; then
                     echo -e "${YELLOW}检测到 dae 配置文件，正在更新...${NC}"
+                    
+                    # 备份配置
                     cp "$DAE_CONFIG" "${DAE_CONFIG}.bak"
 
                     # 更新 lan_interface 配置
@@ -143,10 +148,27 @@ EOF
                         echo -e "${YELLOW}在配置文件中添加 lan_interface 配置...${NC}"
                         echo "lan_interface: $DOCKER_BRIDGES" >> "$DAE_CONFIG"
                     fi
+                    echo -e "${YELLOW}Docker 网桥列表: $DOCKER_BRIDGES${NC}"
 
                     # 重启 dae 服务
+                    echo -e "${YELLOW}--> 正在重启 dae 服务以应用配置...${NC}"
                     systemctl restart dae
-                    echo -e "${GREEN}dae 服务已重启，Docker 网桥 ($DOCKER_BRIDGES) 已配置。${NC}"
+                    
+                    # 检查重启是否成功
+                    if systemctl is-active --quiet dae; then
+                        echo -e "${GREEN}dae 服务重启成功，Docker 网桥 ($DOCKER_BRIDGES) 已配置。${NC}"
+                    else
+                        echo -e "${RED}错误: dae 服务重启失败！正在还原配置文件...${NC}"
+                        # 还原备份
+                        mv "${DAE_CONFIG}.bak" "$DAE_CONFIG"
+                        
+                        echo -e "${RED}=====================================================${NC}"
+                        echo -e "${RED}dae 启动失败，已还原配置。请检查以下日志：${NC}"
+                        echo -e "${RED}=====================================================${NC}"
+                        # 打印 dae 最近的错误日志
+                        journalctl -xeu dae.service --no-pager -n 20
+                        echo -e "${RED}=====================================================${NC}"
+                    fi
                 else
                     echo -e "${YELLOW}未找到 dae 配置文件，跳过配置。${NC}"
                 fi
