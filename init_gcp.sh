@@ -5,10 +5,11 @@
 #          一键初始化Google Cloud (GCP) 等云服务器脚本
 #
 #   功能:
-#   1. 开启 root 用户密码登录 SSH。
-#   2. 可选安装 1Panel 管理面板。
-#   3. 可选安装 x-ui-yg 脚本，用于科学上网。
-#   4. init_gcp.sh 脚本更新。
+#   1. 开启 root 用户密码登录 SSH（必选）。
+#   2. 安装并配置 Docker（必选）。
+#   3. 安装 1Panel 管理面板（可选）。
+#   4. 安装 x-ui-yg 脚本，用于科学上网（可选）。
+#   5. init_gcp.sh 脚本更新（可选）。
 #
 #   作者:   基于用户需求生成的 AI 脚本
 #   版本:   1.2
@@ -156,8 +157,90 @@ while [ "$PASSWORD_SET_SUCCESS" = false ]; do
 done
 echo
 
-# --- 步骤 2: 安装服务器管理面板 ---
-echo -e "${GREEN}--- 步骤 2/3: 安装服务器管理面板 ---${NC}"
+# --- 步骤 2: 安装并配置 Docker ---
+echo -e "${GREEN}--- 步骤 2/4: 安装并配置 Docker ---${NC}"
+
+# 检查是否已安装 Docker
+if command -v docker &> /dev/null; then
+    echo -e "${YELLOW}Docker 已安装，跳过安装步骤。${NC}"
+else
+    echo -e "${YELLOW}--> 正在安装 Docker...${NC}"
+
+    # 安装 Docker
+    curl -fsSL https://get.docker.com | bash
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Docker 安装成功。${NC}"
+    else
+        echo -e "${RED}Docker 安装失败，请检查网络连接。${NC}"
+        exit 1
+    fi
+fi
+
+# 配置 Docker 镜像源
+DOCKER_DAEMON_CONFIG="/etc/docker/daemon.json"
+if [ -f "$DOCKER_DAEMON_CONFIG" ]; then
+    echo -e "${YELLOW}检测到已存在 $DOCKER_DAEMON_CONFIG，备份中...${NC}"
+    cp "$DOCKER_DAEMON_CONFIG" "${DOCKER_DAEMON_CONFIG}.bak"
+fi
+
+# 创建或更新 Docker 配置文件
+cat > "$DOCKER_DAEMON_CONFIG" << 'EOF'
+{
+  "registry-mirrors": ["http://mirror.gcr.io"]
+}
+EOF
+
+echo -e "${GREEN}Docker 镜像源已配置为 http://mirror.gcr.io${NC}"
+
+# 重启 Docker 服务
+echo -e "${YELLOW}--> 正在重启 Docker 服务...${NC}"
+systemctl restart docker
+
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}Docker 服务重启成功。${NC}"
+else
+    echo -e "${RED}Docker 服务重启失败。${NC}"
+fi
+
+# 检查并配置 dae（如果存在）
+if systemctl is-active --quiet dae; then
+    echo -e "${YELLOW}检测到 dae 服务正在运行，正在配置 Docker 网桥...${NC}"
+
+    # 获取所有 Docker 网桥接口
+    DOCKER_BRIDGES=$(ip a | grep -E '^[0-9]+: (docker|br-)' | awk -F': ' '{print $2}' | awk '{print $1}' | tr '\n' ',' | sed 's/,$//')
+
+    if [ -n "$DOCKER_BRIDGES" ]; then
+        DAE_CONFIG="/usr/local/etc/dae/config.dae"
+
+        if [ -f "$DAE_CONFIG" ]; then
+            echo -e "${YELLOW}检测到 dae 配置文件，正在更新...${NC}"
+            cp "$DAE_CONFIG" "${DAE_CONFIG}.bak"
+
+            # 更新 lan_interface 配置
+            if grep -q "^lan_interface:" "$DAE_CONFIG"; then
+                sed -i "s/^lan_interface:.*/lan_interface: $DOCKER_BRIDGES/" "$DAE_CONFIG"
+            else
+                echo -e "${YELLOW}在配置文件中添加 lan_interface 配置...${NC}"
+                echo "lan_interface: $DOCKER_BRIDGES" >> "$DAE_CONFIG"
+            fi
+
+            # 重启 dae 服务
+            systemctl restart dae
+            echo -e "${GREEN}dae 服务已重启，Docker 网桥 ($DOCKER_BRIDGES) 已配置。${NC}"
+        else
+            echo -e "${YELLOW}未找到 dae 配置文件，跳过配置。${NC}"
+        fi
+    else
+        echo -e "${YELLOW}未检测到 Docker 网桥接口。${NC}"
+    fi
+else
+    echo -e "${YELLOW}dae 服务未运行，跳过配置。${NC}"
+fi
+echo
+
+# --- 步骤 3: 安装服务器管理面板 ---
+echo -e "${GREEN}--- 步骤 3/4: 安装服务器管理面板 ---${NC}"
 read -p "是否需要安装 1Panel 管理面板? (y/n) [默认 n]: " INSTALL_PANEL
 
 if [[ "$INSTALL_PANEL" =~ ^[yY](es)?$ ]]; then
