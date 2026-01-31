@@ -6,7 +6,7 @@
 #
 #   功能:
 #   1. 开启 root 用户密码登录 SSH（必选）。
-#   2. 安装并配置 Docker（必选）。
+#   2. 配置 Docker 镜像源和 dae 网桥（必选）。
 #   3. 安装 1Panel 管理面板（可选）。
 #   4. 安装 x-ui-yg 脚本，用于科学上网（可选）。
 #   5. init_gcp.sh 脚本更新（可选）。
@@ -157,85 +157,76 @@ while [ "$PASSWORD_SET_SUCCESS" = false ]; do
 done
 echo
 
-# --- 步骤 2: 安装并配置 Docker ---
-echo -e "${GREEN}--- 步骤 2/4: 安装并配置 Docker ---${NC}"
+# --- 步骤 2: 配置 Docker 镜像源和 dae 网桥 ---
+echo -e "${GREEN}--- 步骤 2/4: 配置 Docker 镜像源和 dae 网桥 ---${NC}"
 
-# 检查是否已安装 Docker
-if command -v docker &> /dev/null; then
-    echo -e "${YELLOW}Docker 已安装，跳过安装步骤。${NC}"
+# 检查 Docker 是否已安装
+if ! command -v docker &> /dev/null; then
+    echo -e "${YELLOW}警告: 未检测到 Docker，跳过配置。${NC}"
+    echo -e "${YELLOW}如需使用 Docker，请先安装 Docker 后手动配置。${NC}"
 else
-    echo -e "${YELLOW}--> 正在安装 Docker...${NC}"
+    echo -e "${GREEN}检测到 Docker 已安装。${NC}"
 
-    # 安装 Docker
-    curl -fsSL https://get.docker.com | bash
-
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}Docker 安装成功。${NC}"
-    else
-        echo -e "${RED}Docker 安装失败，请检查网络连接。${NC}"
-        exit 1
+    # 配置 Docker 镜像源
+    DOCKER_DAEMON_CONFIG="/etc/docker/daemon.json"
+    if [ -f "$DOCKER_DAEMON_CONFIG" ]; then
+        echo -e "${YELLOW}检测到已存在 $DOCKER_DAEMON_CONFIG，备份中...${NC}"
+        cp "$DOCKER_DAEMON_CONFIG" "${DOCKER_DAEMON_CONFIG}.bak"
     fi
-fi
 
-# 配置 Docker 镜像源
-DOCKER_DAEMON_CONFIG="/etc/docker/daemon.json"
-if [ -f "$DOCKER_DAEMON_CONFIG" ]; then
-    echo -e "${YELLOW}检测到已存在 $DOCKER_DAEMON_CONFIG，备份中...${NC}"
-    cp "$DOCKER_DAEMON_CONFIG" "${DOCKER_DAEMON_CONFIG}.bak"
-fi
-
-# 创建或更新 Docker 配置文件
-cat > "$DOCKER_DAEMON_CONFIG" << 'EOF'
+    # 创建或更新 Docker 配置文件
+    cat > "$DOCKER_DAEMON_CONFIG" << 'EOF'
 {
   "registry-mirrors": ["http://mirror.gcr.io"]
 }
 EOF
 
-echo -e "${GREEN}Docker 镜像源已配置为 http://mirror.gcr.io${NC}"
+    echo -e "${GREEN}Docker 镜像源已配置为 http://mirror.gcr.io${NC}"
 
-# 重启 Docker 服务
-echo -e "${YELLOW}--> 正在重启 Docker 服务...${NC}"
-systemctl restart docker
+    # 重启 Docker 服务
+    echo -e "${YELLOW}--> 正在重启 Docker 服务...${NC}"
+    systemctl restart docker
 
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}Docker 服务重启成功。${NC}"
-else
-    echo -e "${RED}Docker 服务重启失败。${NC}"
-fi
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Docker 服务重启成功。${NC}"
+    else
+        echo -e "${RED}Docker 服务重启失败。${NC}"
+    fi
 
-# 检查并配置 dae（如果存在）
-if systemctl is-active --quiet dae; then
-    echo -e "${YELLOW}检测到 dae 服务正在运行，正在配置 Docker 网桥...${NC}"
+    # 检查并配置 dae（如果存在）
+    if systemctl is-active --quiet dae; then
+        echo -e "${YELLOW}检测到 dae 服务正在运行，正在配置 Docker 网桥...${NC}"
 
-    # 获取所有 Docker 网桥接口
-    DOCKER_BRIDGES=$(ip a | grep -E '^[0-9]+: (docker|br-)' | awk -F': ' '{print $2}' | awk '{print $1}' | tr '\n' ',' | sed 's/,$//')
+        # 获取所有 Docker 网桥接口
+        DOCKER_BRIDGES=$(ip a | grep -E '^[0-9]+: (docker|br-)' | awk -F': ' '{print $2}' | awk '{print $1}' | tr '\n' ',' | sed 's/,$//')
 
-    if [ -n "$DOCKER_BRIDGES" ]; then
-        DAE_CONFIG="/usr/local/etc/dae/config.dae"
+        if [ -n "$DOCKER_BRIDGES" ]; then
+            DAE_CONFIG="/usr/local/etc/dae/config.dae"
 
-        if [ -f "$DAE_CONFIG" ]; then
-            echo -e "${YELLOW}检测到 dae 配置文件，正在更新...${NC}"
-            cp "$DAE_CONFIG" "${DAE_CONFIG}.bak"
+            if [ -f "$DAE_CONFIG" ]; then
+                echo -e "${YELLOW}检测到 dae 配置文件，正在更新...${NC}"
+                cp "$DAE_CONFIG" "${DAE_CONFIG}.bak"
 
-            # 更新 lan_interface 配置
-            if grep -q "^lan_interface:" "$DAE_CONFIG"; then
-                sed -i "s/^lan_interface:.*/lan_interface: $DOCKER_BRIDGES/" "$DAE_CONFIG"
+                # 更新 lan_interface 配置
+                if grep -q "^lan_interface:" "$DAE_CONFIG"; then
+                    sed -i "s/^lan_interface:.*/lan_interface: $DOCKER_BRIDGES/" "$DAE_CONFIG"
+                else
+                    echo -e "${YELLOW}在配置文件中添加 lan_interface 配置...${NC}"
+                    echo "lan_interface: $DOCKER_BRIDGES" >> "$DAE_CONFIG"
+                fi
+
+                # 重启 dae 服务
+                systemctl restart dae
+                echo -e "${GREEN}dae 服务已重启，Docker 网桥 ($DOCKER_BRIDGES) 已配置。${NC}"
             else
-                echo -e "${YELLOW}在配置文件中添加 lan_interface 配置...${NC}"
-                echo "lan_interface: $DOCKER_BRIDGES" >> "$DAE_CONFIG"
+                echo -e "${YELLOW}未找到 dae 配置文件，跳过配置。${NC}"
             fi
-
-            # 重启 dae 服务
-            systemctl restart dae
-            echo -e "${GREEN}dae 服务已重启，Docker 网桥 ($DOCKER_BRIDGES) 已配置。${NC}"
         else
-            echo -e "${YELLOW}未找到 dae 配置文件，跳过配置。${NC}"
+            echo -e "${YELLOW}未检测到 Docker 网桥接口。${NC}"
         fi
     else
-        echo -e "${YELLOW}未检测到 Docker 网桥接口。${NC}"
+        echo -e "${YELLOW}dae 服务未运行，跳过配置。${NC}"
     fi
-else
-    echo -e "${YELLOW}dae 服务未运行，跳过配置。${NC}"
 fi
 echo
 
@@ -271,7 +262,7 @@ echo -e "${GREEN}=====================================================${NC}"
 echo
 echo -e "操作摘要:"
 echo -e "1. ${GREEN}Root 登录已开启${NC}，你可以使用新设置的密码通过 SSH 客户端（如 Putty, iTerm2）登录。"
-echo -e "2. ${GREEN}Docker 已安装并配置${NC}，镜像源已设置为 http://mirror.gcr.io。"
+echo -e "2. ${GREEN}Docker 镜像源已配置为 http://mirror.gcr.io${NC}，dae 网桥已配置（如适用）。"
 echo -e "3. 如果安装了 1Panel，请根据上面打印出的 ${YELLOW}面板地址、用户名和密码${NC} 访问。"
 echo -e "4. 如果安装了 x-ui-yg，请根据安装提示访问管理面板。"
 echo

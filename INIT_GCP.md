@@ -3,7 +3,7 @@
 本脚本用于快速初始化 GCP 等云服务器，包含以下功能：
 
 1. 开启 root 用户密码登录 SSH（必选）
-2. 安装并配置 Docker（必选）
+2. 配置 Docker 镜像源和 dae 网桥（必选）
 3. 安装 1Panel 管理面板（可选）
 4. 安装 x-ui-yg 脚本（用于科学上网，可选）
 5. init_gcp.sh 脚本更新（可选）
@@ -39,14 +39,15 @@ sudo bash init_gcp.sh
 - 重启 SSH 服务
 - 提示设置 root 用户密码
 
-### 步骤 2/4：安装并配置 Docker（必选）
+### 步骤 2/4：配置 Docker 镜像源和 dae 网桥（必选）
 
-- 检查并安装 Docker（如果未安装）
-- 配置 Docker 镜像源为 `http://mirror.gcr.io`（避免 CDN 屏蔽）
+- 检查 Docker 是否已安装
+- 如果已安装，配置 Docker 镜像源为 `http://mirror.gcr.io`（避免 CDN 屏蔽）
 - 重启 Docker 服务
 - 自动检测 dae 代理服务
 - 如果 dae 运行，自动配置 Docker 网桥（docker0 和 br-xxx）到 dae 配置
 - 重启 dae 服务使配置生效
+- 如果 Docker 未安装，提示用户手动安装
 
 ### 步骤 3/4：安装服务器管理面板（可选）
 
