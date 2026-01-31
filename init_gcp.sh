@@ -24,7 +24,7 @@ NC='\033[0m' # No Color
 
 # 脚本信息
 SCRIPT_VERSION="1.2"
-SCRIPT_URL="https://raw.githubusercontent.com/foobar-ai/gcp_free/main/init_gcp.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/foobar-ai/gcp_free/master/init_gcp.sh"
 
 # 自更新函数
 update_script() {

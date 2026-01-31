@@ -10,7 +10,7 @@
 ## 一键安装
 
 ```bash
-curl -Ls https://raw.githubusercontent.com/foobar-ai/gcp_free/main/init_gcp.sh | bash
+curl -Ls https://raw.githubusercontent.com/foobar-ai/gcp_free/master/init_gcp.sh | bash
 ```
 
 ## 使用步骤
@@ -60,7 +60,7 @@ curl -Ls https://raw.githubusercontent.com/foobar-ai/gcp_free/main/init_gcp.sh |
 
 ```bash
 # 下载脚本
-curl -O https://raw.githubusercontent.com/foobar-ai/gcp_free/main/init_gcp.sh
+curl -O https://raw.githubusercontent.com/foobar-ai/gcp_free/master/init_gcp.sh
 
 # 添加执行权限
 chmod +x init_gcp.sh
