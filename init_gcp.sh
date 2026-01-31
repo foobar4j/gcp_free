@@ -6,9 +6,9 @@
 #
 #   功能:
 #   1. 开启 root 用户密码登录 SSH（必选）。
-#   2. 配置 Docker 镜像源和 dae 网桥（必选）。
-#   3. 安装 1Panel 管理面板（可选）。
-#   4. 安装 x-ui-yg 脚本，用于科学上网（可选）。
+#   2. 安装 1Panel 管理面板（必选）。
+#   3. 配置 Docker 镜像源和 dae 网桥（必选）。
+#   4. 安装 x-ui-yg 脚本，用于科学上网（必选）。
 #   5. init_gcp.sh 脚本更新（可选）。
 #
 #   作者:   基于用户需求生成的 AI 脚本
@@ -157,8 +157,14 @@ while [ "$PASSWORD_SET_SUCCESS" = false ]; do
 done
 echo
 
-# --- 步骤 2: 配置 Docker 镜像源和 dae 网桥 ---
-echo -e "${GREEN}--- 步骤 2/4: 配置 Docker 镜像源和 dae 网桥 ---${NC}"
+# --- 步骤 2: 安装服务器管理面板 ---
+echo -e "${GREEN}--- 步骤 2/4: 安装服务器管理面板 ---${NC}"
+echo -e "${YELLOW}--> 正在安装 1Panel...${NC}"
+bash -c "$(curl -sSL https://resource.fit2cloud.com/1panel/package/v2/quick_start.sh)"
+echo
+
+# --- 步骤 3: 配置 Docker 镜像源和 dae 网桥 ---
+echo -e "${GREEN}--- 步骤 3/4: 配置 Docker 镜像源和 dae 网桥 ---${NC}"
 
 # 检查 Docker 是否已安装
 if ! command -v docker &> /dev/null; then
@@ -237,29 +243,11 @@ EOF
 fi
 echo
 
-# --- 步骤 3: 安装服务器管理面板 ---
-echo -e "${GREEN}--- 步骤 3/4: 安装服务器管理面板 ---${NC}"
-read -p "是否需要安装 1Panel 管理面板? (y/n) [默认 n]: " INSTALL_PANEL
-
-if [[ "$INSTALL_PANEL" =~ ^[yY](es)?$ ]]; then
-    echo -e "${YELLOW}--> 正在安装 1Panel...${NC}"
-    bash -c "$(curl -sSL https://resource.fit2cloud.com/1panel/package/v2/quick_start.sh)"
-else
-    echo -e "${YELLOW}已跳过安装管理面板。${NC}"
-fi
-echo
-
 # --- 步骤 4: 安装 x-ui-yg 脚本 ---
 echo -e "${GREEN}--- 步骤 4/4: 安装科学上网管理脚本 ---${NC}"
-read -p "是否需要安装 x-ui-yg 管理脚本? (y/n) [默认 n]: " INSTALL_XUI
-
-if [[ "$INSTALL_XUI" =~ ^[yY](es)?$ ]]; then
-    echo -e "${YELLOW}--> 正在执行 x-ui-yg 安装脚本...${NC}"
-    echo -e "${YELLOW}安装过程将是交互式的，请根据提示进行操作。${NC}"
-    bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/x-ui-yg/main/install.sh)
-else
-    echo -e "${YELLOW}已跳过安装 x-ui-yg。${NC}"
-fi
+echo -e "${YELLOW}--> 正在执行 x-ui-yg 安装脚本...${NC}"
+echo -e "${YELLOW}安装过程将是交互式的，请根据提示进行操作。${NC}"
+bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/x-ui-yg/main/install.sh)
 echo
 
 # --- 结束 ---
@@ -269,9 +257,9 @@ echo -e "${GREEN}=====================================================${NC}"
 echo
 echo -e "操作摘要:"
 echo -e "1. ${GREEN}Root 登录已开启${NC}，你可以使用新设置的密码通过 SSH 客户端（如 Putty, iTerm2）登录。"
-echo -e "2. ${GREEN}Docker 镜像源已配置为 http://mirror.gcr.io${NC}，dae 网桥已配置（如适用）。"
-echo -e "3. 如果安装了 1Panel，请根据上面打印出的 ${YELLOW}面板地址、用户名和密码${NC} 访问。"
-echo -e "4. 如果安装了 x-ui-yg，请根据安装提示访问管理面板。"
+echo -e "2. ${GREEN}1Panel 管理面板已安装${NC}，请根据上面打印出的 ${YELLOW}面板地址、用户名和密码${NC} 访问。"
+echo -e "3. ${GREEN}Docker 镜像源已配置为 http://mirror.gcr.io${NC}，dae 网桥已配置（如适用）。"
+echo -e "4. ${GREEN}x-ui-yg 已安装${NC}，请根据安装提示访问管理面板。"
 echo
 echo -e "${YELLOW}重要提示: 如果你安装了任何需要开放端口的服务（如 1Panel），请务必在云服务商（GCP, Azure等）的防火墙/安全组规则中放行相应的端口！${NC}"
 echo
