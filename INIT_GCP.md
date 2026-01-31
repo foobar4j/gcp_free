@@ -10,13 +10,22 @@
 ## 一键安装
 
 ```bash
-curl -Ls https://raw.githubusercontent.com/foobar-ai/gcp_free/master/init_gcp.sh | bash
+# 下载脚本
+curl -O https://raw.githubusercontent.com/foobar-ai/gcp_free/master/init_gcp.sh
+
+# 运行脚本
+sudo bash init_gcp.sh
 ```
+
+**注意**: 由于需要交互式设置 root 密码，请先下载脚本再执行，不要使用管道方式（`curl ... | bash`）。
 
 ## 使用步骤
 
 1. 登录到你的 GCP 服务器（通过 Cloud Shell 或 SSH）
-2. 执行一键安装命令
+2. 下载并运行脚本：
+   ```bash
+   curl -O https://raw.githubusercontent.com/foobar-ai/gcp_free/master/init_gcp.sh && sudo bash init_gcp.sh
+   ```
 3. 按照脚本提示完成配置
 
 ## 脚本功能说明
